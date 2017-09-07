@@ -1667,7 +1667,7 @@ abstract class RenderBox extends RenderObject {
             node = node.parent;
           information.writeln('The nearest ancestor providing an unbounded width constraint is:');
           information.write('  ');
-          information.writeln(node.toStringShallow('\n  '));
+          information.writeln(node.toStringShallow(joiner: '\n  '));
          }
         if (!constraints.hasBoundedHeight) {
           RenderBox node = this;
@@ -1675,7 +1675,7 @@ abstract class RenderBox extends RenderObject {
             node = node.parent;
           information.writeln('The nearest ancestor providing an unbounded height constraint is:');
           information.write('  ');
-          information.writeln(node.toStringShallow('\n  '));
+          information.writeln(node.toStringShallow(joiner: '\n  '));
 
         }
         throw new FlutterError(

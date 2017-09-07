@@ -534,7 +534,7 @@ class TextStyle extends Diagnosticable {
       styles.add(new MessageProperty('${prefix}decoration', decorationDescription.join(' ')));
     }
 
-    final bool styleSpecified = styles.any((DiagnosticsNode n) => !n.hidden);
+    final bool styleSpecified = styles.any((DiagnosticsNode n) => !n.isFiltered(DiagnosticLevel.info));
     properties.add(new DiagnosticsProperty<bool>('${prefix}inherit', inherit, hidden: !styleSpecified && inherit));
     for (DiagnosticsNode style in styles)
       properties.add(style);
