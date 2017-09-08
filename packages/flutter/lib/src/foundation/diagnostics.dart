@@ -9,13 +9,16 @@ import 'print.dart';
 /// The various priority levels used to filter which diagnostics are shown and
 /// omitted.
 ///
-/// Trees of Flutter diagnostics can be very large so filtering the Diagnostics
+/// Trees of Flutter diagnostics can be very large so filtering the diagnostics
 /// shown matters. Typically filtering to only show diagnostics with at least
-/// level debug is appropriate.
+/// level [debug] is appropriate.
 enum DiagnosticLevel {
+  /// Trivial or redundant diagnostics information.
+  ///
   /// Use this level for diagnostic properties that match their default value
   /// and other cases where showing a diagnostic would not add value.
   fine,
+
   /// Diagnostics that should only be shown when performing fine grained
   /// debugging of an object.
   ///
@@ -23,18 +26,22 @@ enum DiagnosticLevel {
   /// value is too verbose (e.g. 300 characters long) to show with a higher
   /// diagnostic level.
   debug,
+
   /// Interesting diagnostics that should be typically shown.
   info,
+
   /// Very important diagnostics that indicate problematic property values.
   ///
   /// For example, use if you would write the property description
   /// message in ALL CAPS.
   warning,
+
   /// Diagnostics that indicate errors or unexpected conditions.
   ///
   /// For example, use for property values where computing the value throws an
   /// exception.
   error,
+
   /// Special level indicating that no diagnostics should be shown.
   ///
   /// Do not specify this level for diagnostics. This level is only used to
@@ -612,7 +619,7 @@ const _NoDefaultValue kNoDefaultValue = const _NoDefaultValue();
 abstract class DiagnosticsNode {
   /// Initializes the object.
   ///
-  /// The [style], [showName], [showSeparator] and [level] arguments must not
+  /// The [style], [showName], [showSeparator], and [level] arguments must not
   /// be null.
   DiagnosticsNode({
     @required this.name,
@@ -676,8 +683,11 @@ abstract class DiagnosticsNode {
   /// `:` is typically used as a separator when displaying as text.
   final bool showSeparator;
 
-  /// Whether the diagnostics should be filtered when only showing diagnostics
-  /// with at least the specified level.
+  /// Whether the diagnostic should be filtered when only showing diagnostics
+  /// with at least the specified `minLevel`.
+  ///
+  /// Depends on the [level] of the diagnostic and whether the diagnostic is
+  /// [hidden]
   bool isFiltered(DiagnosticLevel minLevel) {
     return level.index < minLevel.index || hidden;
   }
@@ -688,6 +698,7 @@ abstract class DiagnosticsNode {
 
   final DiagnosticLevel _defaultLevel;
 
+  /// Priority
   DiagnosticLevel get level => _defaultLevel;
 
   /// Whether the name of the property should be shown when showing the default
@@ -980,7 +991,7 @@ class MessageProperty extends DiagnosticsProperty<Null> {
   /// Messages have no concrete [value] (so [value] will return null). The
   /// message is stored as the description.
   ///
-  /// The [name], `message` and [level] arguments must not be null.
+  /// The [name], `message`, and [level] arguments must not be null.
   MessageProperty(String name, String message, {
     DiagnosticLevel level : DiagnosticLevel.info,
   }) : assert(name != null),
@@ -998,7 +1009,7 @@ class MessageProperty extends DiagnosticsProperty<Null> {
 class StringProperty extends DiagnosticsProperty<String> {
   /// Create a diagnostics property for strings.
   ///
-  /// The [showName], [hidden], [quoted] and [level] arguments must not be null.
+  /// The [showName], [hidden], [quoted], and [level] arguments must not be null.
   StringProperty(String name, String value, {
     String description,
     bool showName: true,
@@ -1215,7 +1226,7 @@ class PercentProperty extends DoubleProperty {
   /// objects, as the fact that the property is shown as a percentage tends to
   /// be sufficient to disambiguate its meaning.
   ///
-  /// The [showName], [hidden] and [level] arguments must not be null.
+  /// The [showName], [hidden], and [level] arguments must not be null.
   PercentProperty(String name, double fraction, {
     String ifNull,
     bool showName: true,
@@ -1294,7 +1305,7 @@ class FlagProperty extends DiagnosticsProperty<bool> {
   /// [showName] defaults to false as typically [ifTrue] and [ifFalse] should
   /// be descriptions that make the property name redundant.
   ///
-  /// The [showName], [hidden] and [level] arguments must not be null.
+  /// The [showName], [hidden], and [level] arguments must not be null.
   FlagProperty(String name, {
     @required bool value,
     this.ifTrue,
@@ -1363,7 +1374,7 @@ class IterableProperty<T> extends DiagnosticsProperty<Iterable<T>> {
   /// value with 0 elements would, confusingly, be displayed as the empty
   /// string. It defaults to the string `[]`.
   ///
-  /// The [style], [hidden], [showName] and [level] arguments must also not be
+  /// The [style], [hidden], [showName], and [level] arguments must also not be
   /// null.
   IterableProperty(String name, Iterable<T> value, {
     Object defaultValue: kNoDefaultValue,
@@ -1463,7 +1474,7 @@ class ObjectFlagProperty<T> extends DiagnosticsProperty<T> {
   /// absent (null), but for which the exact value's [Object.toString]
   /// representation is not very transparent (e.g. a callback).
   ///
-  /// The [showName], [hidden] and [level] arguments must not be null.
+  /// The [showName], [hidden], and [level] arguments must not be null.
   /// Additionally, at least one of [ifPresent] and [ifNull] must not be null.
   ObjectFlagProperty(String name, T value, {
     this.ifPresent,
@@ -1548,7 +1559,7 @@ typedef T ComputePropertyValueCallback<T>();
 class DiagnosticsProperty<T> extends DiagnosticsNode {
   /// Create a diagnostics property.
   ///
-  /// The [hidden], [showName], [showSeparator], [style] and [level]
+  /// The [hidden], [showName], [showSeparator], [style], and [level]
   /// arguments must not be null.
   DiagnosticsProperty(
     String name,
@@ -1586,7 +1597,7 @@ class DiagnosticsProperty<T> extends DiagnosticsNode {
   /// Use if computing the property [value] may throw an exception or is
   /// expensive.
   ///
-  /// The [hidden], [showName], [showSeparator], [style] and [level] arguments
+  /// The [hidden], [showName], [showSeparator], [style], and [level] arguments
   /// must not be null.
   DiagnosticsProperty.lazy(
     String name,

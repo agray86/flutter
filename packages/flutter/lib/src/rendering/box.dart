@@ -2090,7 +2090,7 @@ abstract class RenderBox extends RenderObject {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder description) {
     super.debugFillProperties(description);
-    description.add(new DiagnosticsProperty<Size>('size', _size, ifNull: 'MISSING'));
+    description.add(new DiagnosticsProperty<Size>('size', _size, ifNull: 'MISSING', level: _size == null ? DiagnosticLevel.warning : DiagnosticLevel.info));
   }
 }
 

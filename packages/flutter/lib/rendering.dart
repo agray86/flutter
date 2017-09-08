@@ -26,8 +26,8 @@ export 'package:flutter/foundation.dart' show
   VoidCallback,
   ValueChanged,
   ValueGetter,
-  ValueSetter;
-export 'package:flutter/foundation.dart' show DiagnosticLevel;
+  ValueSetter,
+  DiagnosticLevel;
 export 'package:vector_math/vector_math_64.dart' show Matrix4;
 
 export 'src/rendering/animated_size.dart';
