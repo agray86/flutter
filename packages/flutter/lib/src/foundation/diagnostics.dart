@@ -13,6 +13,13 @@ import 'print.dart';
 /// shown matters. Typically filtering to only show diagnostics with at least
 /// level [debug] is appropriate.
 enum DiagnosticLevel {
+  /// Diagnostics that should not be shown.
+  ///
+  /// For example, property values that convey information which is completely
+  /// redundant with other properties or properties where the value is
+  /// misleading or hard to understand.
+  hidden,
+
   /// Trivial or redundant diagnostics information.
   ///
   /// Use this level for diagnostic properties that match their default value
@@ -619,18 +626,15 @@ const _NoDefaultValue kNoDefaultValue = const _NoDefaultValue();
 abstract class DiagnosticsNode {
   /// Initializes the object.
   ///
-  /// The [style], [showName], [showSeparator], and [level] arguments must not
+  /// The [style], [showName], and [showSeparator] arguments must not
   /// be null.
   DiagnosticsNode({
     @required this.name,
     this.style,
     this.showName: true,
     this.showSeparator: true,
-    DiagnosticLevel level: DiagnosticLevel.info,
   }) : assert(showName != null),
-       assert(showSeparator != null),
-       assert(level != null && level != DiagnosticLevel.off),
-       _defaultLevel = level {
+       assert(showSeparator != null) {
     // A name ending with ':' indicates that the user forgot that the ':' will
     // be automatically added for them when generating descriptions of the
     // property.
@@ -640,7 +644,12 @@ abstract class DiagnosticsNode {
   /// Diagnostics containing just a string `message` and not a concrete name or
   /// value.
   ///
-  /// The [style] and [level] arguments must not be null.
+  /// The [style] argument must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   ///
   /// See also:
   ///
@@ -649,10 +658,9 @@ abstract class DiagnosticsNode {
   factory DiagnosticsNode.message(
     String message, {
     DiagnosticsTreeStyle style: DiagnosticsTreeStyle.singleLine,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) {
     assert(style != null);
-    assert(level != null);
     return new DiagnosticsProperty<Null>(
       '',
       null,
@@ -683,23 +691,20 @@ abstract class DiagnosticsNode {
   /// `:` is typically used as a separator when displaying as text.
   final bool showSeparator;
 
-  /// Whether the diagnostic should be filtered when only showing diagnostics
-  /// with at least the specified `minLevel`.
+  /// Whether the diagnostic should be filtered due to its [level] being lower
+  /// than `minLevel`
   ///
-  /// Depends on the [level] of the diagnostic and whether the diagnostic is
-  /// [hidden]
-  bool isFiltered(DiagnosticLevel minLevel) {
-    return level.index < minLevel.index || hidden;
-  }
+  /// If `minLevel` is [DiagnosticLevel.hidden] no diagnostics will be filtered.
+  /// If `minLevel` is [DiagnosticsLevel.off] all diagnostics will be filtered.
+  bool isFiltered(DiagnosticLevel minLevel) => level.index < minLevel.index;
 
-  /// Whether the diagnostics should be hidden when showing the default
-  /// view of a tree.
-  bool get hidden;
-
-  final DiagnosticLevel _defaultLevel;
-
-  /// Priority
-  DiagnosticLevel get level => _defaultLevel;
+  /// Priority level of the diagnostic used to control which diagnostics should
+  /// be shown and filtered.
+  ///
+  /// Typically this only makes sense to set to a different value than
+  /// [DiagnosticLevel.info] for diagnostics representing properties where some
+  /// properties may be only marginally relevant.
+  DiagnosticLevel get level => DiagnosticLevel.info;
 
   /// Whether the name of the property should be shown when showing the default
   /// view of the tree.
@@ -1009,19 +1014,22 @@ class MessageProperty extends DiagnosticsProperty<Null> {
 class StringProperty extends DiagnosticsProperty<String> {
   /// Create a diagnostics property for strings.
   ///
-  /// The [showName], [hidden], [quoted], and [level] arguments must not be null.
+  /// The [showName] and [quoted] arguments must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   StringProperty(String name, String value, {
     String description,
     bool showName: true,
     Object defaultValue: kNoDefaultValue,
-    bool hidden: false,
+    bool hidden,
     this.quoted: true,
     String ifEmpty,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) : assert(showName != null),
-       assert(hidden != null),
        assert(quoted != null),
-       assert(level != null),
        super(
     name,
     value,
@@ -1062,13 +1070,13 @@ class StringProperty extends DiagnosticsProperty<String> {
 abstract class _NumProperty<T extends num> extends DiagnosticsProperty<T> {
   _NumProperty(String name,
     T value, {
-    bool hidden: false,
+    bool hidden,
     String ifNull,
     this.unit,
     bool showName: true,
     Object defaultValue: kNoDefaultValue,
     String tooltip,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) : super(
     name,
     value,
@@ -1082,7 +1090,7 @@ abstract class _NumProperty<T extends num> extends DiagnosticsProperty<T> {
 
   _NumProperty.lazy(String name,
     ComputePropertyValueCallback<T> computeValue, {
-    bool hidden: false,
+    bool hidden,
     String ifNull,
     this.unit,
     bool showName: true,
@@ -1125,18 +1133,21 @@ abstract class _NumProperty<T extends num> extends DiagnosticsProperty<T> {
 class DoubleProperty extends _NumProperty<double> {
   /// If specified, [unit] describes the unit for the [value] (e.g. px).
   ///
-  /// The [showName], [hidden], and [level] arguments must not be null.
+  /// The [showName] argument must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   DoubleProperty(String name, double value, {
-    bool hidden: false,
+    bool hidden,
     String ifNull,
     String unit,
     String tooltip,
     Object defaultValue: kNoDefaultValue,
     bool showName : true,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) : assert(showName != null),
-       assert(hidden != null),
-       assert(level != null),
        super(
     name,
     value,
@@ -1154,20 +1165,23 @@ class DoubleProperty extends _NumProperty<double> {
   /// Use if computing the property [value] may throw an exception or is
   /// expensive.
   ///
-  /// The [showName], [hidden], and [level] arguments must not be null.
+  /// The [showName] argument must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   DoubleProperty.lazy(
     String name,
     ComputePropertyValueCallback<double> computeValue, {
-    bool hidden: false,
+    bool hidden,
     String ifNull,
     bool showName: true,
     String unit,
     String tooltip,
     Object defaultValue: kNoDefaultValue,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) : assert(showName != null),
-       assert(hidden != null),
-       assert(level != null),
        super.lazy(
     name,
     computeValue,
@@ -1190,17 +1204,20 @@ class DoubleProperty extends _NumProperty<double> {
 class IntProperty extends _NumProperty<int> {
   /// Create a diagnostics property for integers.
   ///
-  /// The [showName], [hidden], and [level] arguments must not be null.
+  /// The [showName] argument must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   IntProperty(String name, int value, {
     String ifNull,
     bool showName: true,
     String unit,
     Object defaultValue: kNoDefaultValue,
-    bool hidden: false,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    bool hidden,
+    DiagnosticLevel level,
   }) : assert(showName != null),
-       assert(hidden != null),
-       assert(level != null),
        super(
     name,
     value,
@@ -1226,17 +1243,20 @@ class PercentProperty extends DoubleProperty {
   /// objects, as the fact that the property is shown as a percentage tends to
   /// be sufficient to disambiguate its meaning.
   ///
-  /// The [showName], [hidden], and [level] arguments must not be null.
+  /// The [showName] argument must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   PercentProperty(String name, double fraction, {
     String ifNull,
     bool showName: true,
     String tooltip,
     String unit,
-    bool hidden: false,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    bool hidden,
+    DiagnosticLevel level,
   }) : assert(showName != null),
-       assert(hidden != null),
-       assert(level != null),
        super(
     name,
     fraction,
@@ -1305,18 +1325,21 @@ class FlagProperty extends DiagnosticsProperty<bool> {
   /// [showName] defaults to false as typically [ifTrue] and [ifFalse] should
   /// be descriptions that make the property name redundant.
   ///
-  /// The [showName], [hidden], and [level] arguments must not be null.
+  /// The [showName] argument must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   FlagProperty(String name, {
     @required bool value,
     this.ifTrue,
     this.ifFalse,
     bool showName: false,
-    bool hidden: false,
+    bool hidden,
     Object defaultValue,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) : assert(showName != null),
-       assert(hidden != null),
-       assert(level != null),
        super(
     name,
     value,
@@ -1330,34 +1353,51 @@ class FlagProperty extends DiagnosticsProperty<bool> {
 
   /// Description to use if the property [value] is true.
   ///
-  /// If not specified and [value] equals true, the description is set to the
-  /// empty string and the property is [hidden].
+  /// If not specified and [value] equals true the property's priority [level]
+  /// will be [DiagnosticLevel.hidden].
   final String ifTrue;
 
   /// Description to use if the property value is false.
   ///
-  /// If not specified and [value] equals false, the description is set to the
-  /// empty string and the property is [hidden].
+  /// If not specified and [value] equals false, the property's priority [level]
+  /// will be [DiagnosticLevel.hidden].
   final String ifFalse;
 
   @override
   String valueToString({ TextTreeConfiguration parentConfiguration }) {
-    if (value == true)
-      return ifTrue ?? '';
-    if (value == false)
-      return ifFalse ?? '';
-    return '';
+    if (value == true) {
+      if (ifTrue != null)
+        return ifTrue;
+    } else if (value == false) {
+      if (ifFalse != null)
+        return ifFalse;
+    }
+    return super.valueToString(parentConfiguration: parentConfiguration);
   }
 
   @override
-  bool get hidden {
-    if (super.hidden)
+  bool get showName {
+    if (value == null || (value == true && ifTrue == null) || (value == false && ifFalse == null)) {
+      // We are missing a description for the flag value so we need to show the
+      // flag name. The property will have DiagnosticLevel.hidden for this case
+      // so users will not see this the property in this case unless they are
+      // displaying hidden properties.
       return true;
-    if (value == true)
-      return ifTrue == null;
-    if (value == false)
-      return ifFalse == null;
-    return true;
+    }
+    return super.showName;
+  }
+
+  @override
+  DiagnosticLevel get level {
+    if (value == true) {
+      if (ifTrue == null)
+        return DiagnosticLevel.hidden;
+    }
+    if (value == false) {
+      if (ifFalse == null)
+        return DiagnosticLevel.hidden;
+    }
+    return super.level;
   }
 }
 
@@ -1374,21 +1414,23 @@ class IterableProperty<T> extends DiagnosticsProperty<Iterable<T>> {
   /// value with 0 elements would, confusingly, be displayed as the empty
   /// string. It defaults to the string `[]`.
   ///
-  /// The [style], [hidden], [showName], and [level] arguments must also not be
-  /// null.
+  /// The [style], and [showName] arguments must also not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   IterableProperty(String name, Iterable<T> value, {
     Object defaultValue: kNoDefaultValue,
     String ifNull,
     String ifEmpty: '[]',
     DiagnosticsTreeStyle style: DiagnosticsTreeStyle.singleLine,
-    bool hidden: false,
+    bool hidden,
     bool showName: true,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    DiagnosticLevel level,
   }) : assert(ifEmpty != null),
        assert(style != null),
-       assert(hidden != null),
        assert(showName != null),
-       assert(level != null),
        super(
     name,
     value,
@@ -1428,14 +1470,15 @@ class IterableProperty<T> extends DiagnosticsProperty<Iterable<T>> {
 class EnumProperty<T> extends DiagnosticsProperty<T> {
   /// Create a diagnostics property that displays an enum.
   ///
-  /// The [hidden] and [level] arguments must not be null.
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   EnumProperty(String name, T value, {
     Object defaultValue: kNoDefaultValue,
-    bool hidden: false,
-    DiagnosticLevel level: DiagnosticLevel.info,
-  }) : assert(hidden != null),
-       assert(level != null),
-       super (
+    bool hidden,
+    DiagnosticLevel level,
+  }) : super (
     name,
     value,
     defaultValue: defaultValue,
@@ -1457,8 +1500,8 @@ class EnumProperty<T> extends DiagnosticsProperty<T> {
 ///
 /// The [ifPresent] and [ifNull] strings describe the property [value] when it
 /// is non-null and null respectively. If one of [ifPresent] or [ifNull] is
-/// omitted, that is taken to mean that [hidden] should be true when [value] is
-/// non-null or null respectively.
+/// omitted, that is taken to mean that [level] should be
+/// [DiagnosticsLevel.hidden] when [value] is non-null or null respectively.
 ///
 /// This kind of diagnostics property is typically used for values mostly opaque
 /// values, like closures, where presenting the actual object is of dubious
@@ -1474,18 +1517,21 @@ class ObjectFlagProperty<T> extends DiagnosticsProperty<T> {
   /// absent (null), but for which the exact value's [Object.toString]
   /// representation is not very transparent (e.g. a callback).
   ///
-  /// The [showName], [hidden], and [level] arguments must not be null.
-  /// Additionally, at least one of [ifPresent] and [ifNull] must not be null.
+  /// The [showName] argument must not be null. Additionally, at least one of
+  /// [ifPresent] and [ifNull] must not be null.
+  ///
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   ObjectFlagProperty(String name, T value, {
     this.ifPresent,
     String ifNull,
     bool showName: false,
-    bool hidden: false,
-    DiagnosticLevel level: DiagnosticLevel.info,
+    bool hidden,
+    DiagnosticLevel level,
   }) : assert(ifPresent != null || ifNull != null),
        assert(showName != null),
-       assert(hidden != null),
-       assert(level != null),
        super(
     name,
     value,
@@ -1518,24 +1564,45 @@ class ObjectFlagProperty<T> extends DiagnosticsProperty<T> {
   /// Description to use if the property [value] is not null.
   ///
   /// If the property [value] is not null and [ifPresent] is null, the
-  /// description returns the empty string and the property is [hidden].
+  /// [level] for the property is [DiagnosticsLevel.hidden] and the description
+  /// from superclass is used.
   final String ifPresent;
 
   @override
   String valueToString({ TextTreeConfiguration parentConfiguration }) {
-    if (value != null)
-      return ifPresent ?? '';
-
-    return ifNull ?? '';
+    if (value != null) {
+      if (ifPresent != null)
+        return ifPresent;
+    } else {
+      if (ifNull != null)
+        return ifNull;
+    }
+    return super.valueToString(parentConfiguration: parentConfiguration);
   }
 
   @override
-  bool get hidden {
-    if (super.hidden)
+  bool get showName {
+    if ((value != null && ifPresent == null) || (value == null && ifNull == null)) {
+      // We are missing a description for the flag value so we need to show the
+      // flag name. The property will have DiagnosticLevel.hidden for this case
+      // so users will not see this the property in this case unless they are
+      // displaying hidden properties.
       return true;
-    if (value != null)
-      return ifPresent == null;
-    return ifNull == null;
+    }
+    return super.showName;
+  }
+
+  @override
+  DiagnosticLevel get level {
+    if (value != null) {
+      if (ifPresent == null)
+        return DiagnosticLevel.hidden;
+    } else {
+      if (ifNull == null)
+        return DiagnosticLevel.hidden;
+    }
+
+    return super.level;
   }
 }
 
@@ -1551,21 +1618,21 @@ typedef T ComputePropertyValueCallback<T>();
 /// If the default `value.toString()` does not provide an adequate description
 /// of the value, specify `description` defining a custom description.
 ///
-/// The [hidden] property specifies whether the property should be hidden from
-/// the default output (e.g. the output given by [toStringDeep]).
-///
 /// The [showSeparator] property indicates whether a separator should be placed
 /// between the property [name] and its [value].
 class DiagnosticsProperty<T> extends DiagnosticsNode {
   /// Create a diagnostics property.
   ///
-  /// The [hidden], [showName], [showSeparator], [style], and [level]
-  /// arguments must not be null.
+  /// The [showName], [showSeparator], and [style] arguments must not be null.
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   DiagnosticsProperty(
     String name,
     T value, {
     String description,
-    bool hidden: false,
+    bool hidden,
     this.ifNull,
     this.ifEmpty,
     bool showName: true,
@@ -1573,23 +1640,21 @@ class DiagnosticsProperty<T> extends DiagnosticsNode {
     this.defaultValue: kNoDefaultValue,
     this.tooltip,
     DiagnosticsTreeStyle style: DiagnosticsTreeStyle.singleLine,
-    DiagnosticLevel level: DiagnosticLevel.info,
-  }) : assert(hidden != null),
+    DiagnosticLevel level,
+  }) : assert(hidden == null || level == null),
        assert(showName != null),
        assert(showSeparator != null),
        assert(style != null),
-       assert(level != null),
        _description = description,
        _valueComputed = true,
        _value = value,
        _computeValue = null,
-       _hidden = hidden,
+       _defaultLevel = hidden == true ? DiagnosticLevel.hidden : (level ?? DiagnosticLevel.info),
        super(
          name: name,
          showName: showName,
          showSeparator: showSeparator,
          style: style,
-         level: level,
       );
 
   /// Property with a [value] that is computed only when needed.
@@ -1597,13 +1662,16 @@ class DiagnosticsProperty<T> extends DiagnosticsNode {
   /// Use if computing the property [value] may throw an exception or is
   /// expensive.
   ///
-  /// The [hidden], [showName], [showSeparator], [style], and [level] arguments
-  /// must not be null.
+  /// The [showName], [showSeparator], and [style] arguments must not be null.
+  /// At most one of `hidden` and [level] should be specified. Setting `hidden`
+  /// to `true` is equivalent to setting [level] to [DiagnosticLevel.hidden].
+  /// If neither `hidden` or [level] is set, [level] defaults to
+  /// [DiagnosticsLevel.info].
   DiagnosticsProperty.lazy(
     String name,
     ComputePropertyValueCallback<T> computeValue, {
     String description,
-    bool hidden: false,
+    bool hidden,
     this.ifNull,
     this.ifEmpty,
     bool showName: true,
@@ -1611,24 +1679,21 @@ class DiagnosticsProperty<T> extends DiagnosticsNode {
     this.defaultValue: kNoDefaultValue,
     this.tooltip,
     DiagnosticsTreeStyle style: DiagnosticsTreeStyle.singleLine,
-    DiagnosticLevel level: DiagnosticLevel.info,
-  }) : assert(hidden != null),
-       assert(showName != null),
+    DiagnosticLevel level,
+  }) : assert(showName != null),
        assert(showSeparator != null),
        assert(defaultValue == kNoDefaultValue || defaultValue is T),
        assert(style != null),
-       assert(level != null),
        _description = description,
        _valueComputed = false,
        _value = null,
        _computeValue = computeValue,
-       _hidden = hidden,
+        _defaultLevel = hidden == true ? DiagnosticLevel.hidden : (level ?? DiagnosticLevel.info),
        super(
          name: name,
          showName: showName,
          showSeparator: showSeparator,
          style: style,
-         level: level,
        );
 
   final String _description;
@@ -1752,24 +1817,20 @@ class DiagnosticsProperty<T> extends DiagnosticsNode {
     }
   }
 
-  /// If the [value] of the property equals [defaultValue] the property is
-  /// [hidden] as the [value] is uninteresting.
+  /// If the [value] of the property equals [defaultValue] the priority [level]
+  /// of the property is downgraded to [DiagnosticLevel.fine] as the property
+  /// value is uninteresting.
   ///
   /// [defaultValue] has type [T] or is [kNoDefaultValue].
   final Object defaultValue;
 
-  final bool _hidden;
-
-  /// Whether the property should be hidden when showing the default
-  /// view of a tree.
-  ///
-  /// This could be set to true (hiding the property) if another property
-  /// provides a normally more useful summary of the value.
-  @override
-  bool get hidden => _hidden;
+  DiagnosticLevel _defaultLevel;
 
   @override
   DiagnosticLevel get level {
+    if (_defaultLevel == DiagnosticLevel.hidden)
+      return _defaultLevel;
+
     if (exception != null)
       return DiagnosticLevel.error;
 
@@ -1838,8 +1899,6 @@ class DiagnosticableNode<T extends Diagnosticable> extends DiagnosticsNode {
   String toDescription({ TextTreeConfiguration parentConfiguration }) {
     return value.toStringShort();
   }
-
-  @override bool get hidden => false;
 }
 
 /// [DiagnosticsNode] for an instance of [DiagnosticableTree].

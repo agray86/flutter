@@ -665,8 +665,8 @@ void main() {
     expect(trueFlag.value, isTrue);
     expect(falseFlag.value, isFalse);
 
-    expect(trueFlag.hidden, isFalse);
-    expect(falseFlag.hidden, isTrue);
+    expect(trueFlag.isFiltered(DiagnosticLevel.fine), isFalse);
+    expect(falseFlag.isFiltered(DiagnosticLevel.fine), isTrue);
   });
 
   test('property with tooltip test', () {
@@ -680,7 +680,7 @@ void main() {
       equals('name: value (tooltip)'),
     );
     expect(withTooltip.value, equals('value'));
-    expect(withTooltip.hidden, isFalse);
+    expect(withTooltip.isFiltered(DiagnosticLevel.fine), isFalse);
   });
 
   test('double property test', () {
@@ -689,13 +689,13 @@ void main() {
       42.0,
     );
     expect(doubleProperty.toString(), equals('name: 42.0'));
-    expect(doubleProperty.hidden, isFalse);
+    expect(doubleProperty.isFiltered(DiagnosticLevel.info), isFalse);
     expect(doubleProperty.value, equals(42.0));
 
     expect(new DoubleProperty('name', 1.3333).toString(), equals('name: 1.3'));
 
     expect(new DoubleProperty('name', null).toString(), equals('name: null'));
-    expect(new DoubleProperty('name', null).hidden, equals(false));
+    expect(new DoubleProperty('name', null).isFiltered(DiagnosticLevel.info), equals(false));
 
     expect(
       new DoubleProperty('name', null, ifNull: 'missing').toString(),
@@ -716,7 +716,7 @@ void main() {
         () => 42.0,
     );
     expect(safe.toString(), equals('name: 42.0'));
-    expect(safe.hidden, isFalse);
+    expect(safe.isFiltered(DiagnosticLevel.info), isFalse);
     expect(safe.value, equals(42.0));
 
     expect(
@@ -729,7 +729,7 @@ void main() {
       equals('name: null'),
     );
     expect(
-      new DoubleProperty.lazy('name', () => null).hidden,
+      new DoubleProperty.lazy('name', () => null).isFiltered(DiagnosticLevel.info),
       equals(false),
     );
 
@@ -740,7 +740,7 @@ void main() {
     // TODO(jacobr): it would be better if throwingProperty.object threw an
     // exception.
     expect(throwingProperty.value, isNull);
-    expect(throwingProperty.hidden, isFalse);
+    expect(throwingProperty.isFiltered(DiagnosticLevel.info), isFalse);
     expect(
       throwingProperty.toString(),
       equals('name: EXCEPTION (FlutterError)'),
@@ -829,10 +829,10 @@ void main() {
     );
 
     expect(present.toString(), equals('clickable'));
-    expect(present.hidden, isFalse);
+    expect(present.isFiltered(DiagnosticLevel.info), isFalse);
     expect(present.value, equals(onClick));
-    expect(missing.toString(), equals(''));
-    expect(missing.hidden, isTrue);
+    expect(missing.toString(), equals('onClick: null'));
+    expect(missing.isFiltered(DiagnosticLevel.fine), isTrue);
   });
 
   test('missing callback property test', () {
@@ -848,11 +848,11 @@ void main() {
       ifNull: 'disabled',
     );
 
-    expect(present.toString(), equals(''));
-    expect(present.hidden, isTrue);
+    expect(present.toString(), equals('onClick: Closure: () => dynamic'));
+    expect(present.isFiltered(DiagnosticLevel.fine), isTrue);
     expect(present.value, equals(onClick));
     expect(missing.toString(), equals('disabled'));
-    expect(missing.hidden, isFalse);
+    expect(missing.isFiltered(DiagnosticLevel.info), isFalse);
   });
 
   test('describe bool property', () {
@@ -871,10 +871,10 @@ void main() {
       showName: true,
     );
     expect(yes.toString(), equals('name: YES'));
-    expect(yes.hidden, isFalse);
+    expect(yes.level, equals(DiagnosticLevel.info));
     expect(yes.value, isTrue);
     expect(no.toString(), equals('name: NO'));
-    expect(no.hidden, isFalse);
+    expect(no.level, equals(DiagnosticLevel.info));
     expect(no.value, isFalse);
 
     expect(
@@ -905,8 +905,8 @@ void main() {
         ifFalse: 'NO',
         hidden: true,
         showName: true,
-      ).hidden,
-      isTrue,
+      ).level,
+      equals(DiagnosticLevel.hidden),
     );
   });
 
@@ -927,19 +927,19 @@ void main() {
       'name',
       null,
     );
-    expect(hello.hidden, isFalse);
+    expect(hello.level, equals(DiagnosticLevel.info));
     expect(hello.value, equals(ExampleEnum.hello));
     expect(hello.toString(), equals('name: hello'));
 
-    expect(world.hidden, isFalse);
+    expect(world.level, equals(DiagnosticLevel.info));
     expect(world.value, equals(ExampleEnum.world));
     expect(world.toString(), equals('name: world'));
 
-    expect(deferToChild.hidden, isFalse);
+    expect(deferToChild.level, equals(DiagnosticLevel.info));
     expect(deferToChild.value, equals(ExampleEnum.deferToChild));
     expect(deferToChild.toString(), equals('name: defer-to-child'));
 
-    expect(nullEnum.hidden, isFalse);
+    expect(nullEnum.level, equals(DiagnosticLevel.info));
     expect(nullEnum.value, isNull);
     expect(nullEnum.toString(), equals('name: null'));
 
@@ -958,8 +958,8 @@ void main() {
         'name',
         ExampleEnum.hello,
         hidden: true,
-      ).hidden,
-      isTrue,
+      ).level,
+      equals(DiagnosticLevel.hidden),
     );
   });
 
@@ -970,7 +970,7 @@ void main() {
     );
     expect(regular.toString(), equals('name: 42'));
     expect(regular.value, equals(42));
-    expect(regular.hidden, isFalse);
+    expect(regular.level, equals(DiagnosticLevel.info));
 
     final IntProperty nullValue = new IntProperty(
       'name',
@@ -978,12 +978,12 @@ void main() {
     );
     expect(nullValue.toString(), equals('name: null'));
     expect(nullValue.value, isNull);
-    expect(nullValue.hidden, isFalse);
+    expect(nullValue.level, equals(DiagnosticLevel.info));
 
     final IntProperty hideNull = new IntProperty(
       'name',
       null,
-      defaultValue: null
+      defaultValue: null,
     );
     expect(hideNull.toString(), equals('name: null'));
     expect(hideNull.value, isNull);
@@ -996,7 +996,7 @@ void main() {
     );
     expect(nullDescription.toString(), equals('name: missing'));
     expect(nullDescription.value, isNull);
-    expect(nullDescription.hidden, isFalse);
+    expect(nullDescription.level, equals(DiagnosticLevel.info));
 
     final IntProperty hideName = new IntProperty(
       'name',
@@ -1005,7 +1005,7 @@ void main() {
     );
     expect(hideName.toString(), equals('42'));
     expect(hideName.value, equals(42));
-    expect(hideName.hidden, isFalse);
+    expect(hideName.level, equals(DiagnosticLevel.info));
 
     final IntProperty withUnit = new IntProperty(
       'name',
@@ -1014,7 +1014,7 @@ void main() {
     );
     expect(withUnit.toString(), equals('name: 42pt'));
     expect(withUnit.value, equals(42));
-    expect(withUnit.hidden, isFalse);
+    expect(withUnit.level, equals(DiagnosticLevel.info));
 
     final IntProperty defaultValue = new IntProperty(
       'name',
@@ -1032,7 +1032,7 @@ void main() {
     );
     expect(notDefaultValue.toString(), equals('name: 43'));
     expect(notDefaultValue.value, equals(43));
-    expect(notDefaultValue.hidden, isFalse);
+    expect(notDefaultValue.level, equals(DiagnosticLevel.info));
 
     final IntProperty hidden = new IntProperty(
       'name',
@@ -1041,7 +1041,7 @@ void main() {
     );
     expect(hidden.toString(), equals('name: 42'));
     expect(hidden.value, equals(42));
-    expect(hidden.hidden, isTrue);
+    expect(hidden.level, equals(DiagnosticLevel.hidden));
   });
 
   test('object property test', () {
@@ -1051,7 +1051,7 @@ void main() {
       rect,
     );
     expect(simple.value, equals(rect));
-    expect(simple.hidden, isFalse);
+    expect(simple.level, equals(DiagnosticLevel.info));
     expect(simple.toString(), equals('name: Rect.fromLTRB(0.0, 0.0, 20.0, 20.0)'));
 
     final DiagnosticsNode withDescription = new DiagnosticsProperty<Rect>(
@@ -1060,7 +1060,7 @@ void main() {
       description: 'small rect',
     );
     expect(withDescription.value, equals(rect));
-    expect(withDescription.hidden, isFalse);
+    expect(withDescription.level, equals(DiagnosticLevel.info));
     expect(withDescription.toString(), equals('name: small rect'));
 
     final DiagnosticsProperty<Object> nullProperty = new DiagnosticsProperty<Object>(
@@ -1068,7 +1068,7 @@ void main() {
       null,
     );
     expect(nullProperty.value, isNull);
-    expect(nullProperty.hidden, isFalse);
+    expect(nullProperty.level, equals(DiagnosticLevel.info));
     expect(nullProperty.toString(), equals('name: null'));
 
     final DiagnosticsProperty<Object> hideNullProperty = new DiagnosticsProperty<Object>(
@@ -1086,16 +1086,17 @@ void main() {
       ifNull: 'missing',
     );
     expect(nullDescription.value, isNull);
-    expect(nullDescription.hidden, isFalse);
+    expect(nullDescription.level, equals(DiagnosticLevel.info));
     expect(nullDescription.toString(), equals('name: missing'));
 
     final DiagnosticsProperty<Rect> hideName = new DiagnosticsProperty<Rect>(
       'name',
       rect,
       showName: false,
+      level: DiagnosticLevel.warning
     );
     expect(hideName.value, equals(rect));
-    expect(hideName.hidden, isFalse);
+    expect(hideName.level, equals(DiagnosticLevel.warning));
     expect(hideName.toString(), equals('Rect.fromLTRB(0.0, 0.0, 20.0, 20.0)'));
 
     final DiagnosticsProperty<Rect> hideSeparator = new DiagnosticsProperty<Rect>(
@@ -1104,7 +1105,7 @@ void main() {
       showSeparator: false,
     );
     expect(hideSeparator.value, equals(rect));
-    expect(hideSeparator.hidden, isFalse);
+    expect(hideSeparator.level, equals(DiagnosticLevel.info));
     expect(
       hideSeparator.toString(),
       equals('Creator Rect.fromLTRB(0.0, 0.0, 20.0, 20.0)'),
@@ -1119,7 +1120,7 @@ void main() {
       description: 'small rect',
     );
     expect(simple.value, equals(rect));
-    expect(simple.hidden, isFalse);
+    expect(simple.level, equals(DiagnosticLevel.info));
     expect(simple.toString(), equals('name: small rect'));
 
     final DiagnosticsNode nullProperty = new DiagnosticsProperty<Object>.lazy(
@@ -1205,8 +1206,18 @@ void main() {
     );
     expect(hide.name, equals('wasLayout'));
     expect(hide.value, isFalse);
-    expect(hide.isFiltered(DiagnosticLevel.info), isTrue);
-    expect(hide.toString(), equals(''));
+    expect(hide.level, equals(DiagnosticLevel.hidden));
+    expect(hide.toString(), equals('wasLayout: false'));
+
+    final FlagProperty hideTrue = new FlagProperty(
+      'wasLayout',
+      value: true,
+      ifFalse: 'no layout computed',
+    );
+    expect(hideTrue.name, equals('wasLayout'));
+    expect(hideTrue.value, isTrue);
+    expect(hideTrue.level, equals(DiagnosticLevel.hidden));
+    expect(hideTrue.toString(), equals('wasLayout: true'));
   });
 
   test('has property test', () {
@@ -1227,7 +1238,7 @@ void main() {
     expect(missing.name, equals('onClick'));
     expect(missing.value, isNull);
     expect(missing.isFiltered(DiagnosticLevel.info), isTrue);
-    expect(missing.toString(), equals(''));
+    expect(missing.toString(), equals('onClick: null'));
   });
 
   test('iterable property test', () {
